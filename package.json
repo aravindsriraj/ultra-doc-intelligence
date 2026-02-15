@@ -1,0 +1,39 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@copilotkit/react-core": "^1.51.3",
+    "@copilotkit/react-ui": "^1.51.3",
+    "@copilotkit/runtime": "^1.51.3",
+    "@langchain/core": "^1.1.24",
+    "@langchain/langgraph": "^1.1.4",
+    "@langchain/openai": "^1.2.7",
+    "@llamaindex/llama-cloud": "^1.5.0",
+    "@pinecone-database/pinecone": "^7.0.0",
+    "formidable": "^3.5.4",
+    "langchain": "^1.2.24",
+    "next": "16.1.6",
+    "openai": "^6.22.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
