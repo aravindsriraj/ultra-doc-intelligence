@@ -17,7 +17,7 @@ This project provides an end-to-end RAG assistant that:
 - supports grounded Q&A over one or multiple indexed documents
 - returns answer + supporting sources + confidence + guardrail status
 - extracts required shipment fields as JSON (null-safe)
-- includes a lightweight reviewer UI and Copilot sidebar
+- includes a lightweight reviewer UI for upload, ask, and extraction
 
 ---
 
@@ -29,7 +29,6 @@ This project provides an end-to-end RAG assistant that:
 │  - Upload                                                         │
 │  - Multi-select ask (document_ids[])                              │
 │  - Multi-select extract (document_ids[]) + pagination             │
-│  - CopilotSidebar + tool rendering                                │
 └───────────────────────────────┬────────────────────────────────────┘
                                 │
                     Next.js App Router APIs
@@ -61,7 +60,7 @@ in Pinecone (serverless-safe)                   │
   - `src/app/ask/route.ts`
   - `src/app/extract/route.ts`
   - `src/app/documents/route.ts`
-  - `src/app/api/copilotkit/route.ts`
+  - `src/app/api/copilotkit/route.ts` (optional backend agent endpoint)
 - Service orchestration
   - `src/lib/services/doc-intelligence.ts`
 - RAG and retrieval
@@ -84,7 +83,6 @@ in Pinecone (serverless-safe)                   │
 - Vector DB: Pinecone (hybrid dense + sparse retrieval)
 - Dense embeddings: OpenAI `text-embedding-3-large`
 - Sparse embeddings: Pinecone `pinecone-sparse-english-v0`
-- UI assistant layer: CopilotKit (`CopilotSidebar`, `useRenderToolCall`, `useCopilotReadable`)
 
 ---
 
@@ -332,7 +330,7 @@ Returns indexed document list for UI dropdowns.
 
 ### `POST /api/copilotkit`
 
-CopilotKit runtime endpoint exposing:
+Optional backend runtime endpoint exposing:
 - `ask_document`
 - `extract_shipment`
 - `get_latest_document`
@@ -348,7 +346,6 @@ The UI supports:
 - View answer, sources, confidence, guardrail
 - Run structured extraction on selected one or many docs
 - View extraction output with pagination (includes doc name + doc id)
-- Use Copilot sidebar for tool-based interactions
 
 ---
 
@@ -461,4 +458,3 @@ Namespace strategy:
 
 - Never commit secrets in source control.
 - Rotate keys immediately if shared in logs/chats/history.
-

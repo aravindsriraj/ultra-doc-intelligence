@@ -1,8 +1,6 @@
 "use client";
 
 import { Dispatch, FormEvent, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
-import { CopilotSidebar } from "@copilotkit/react-ui";
-import { useCopilotReadable, useRenderToolCall } from "@copilotkit/react-core";
 
 import { AskResponse, ExtractResponse, IndexedDocument, UploadResponse } from "@/lib/types";
 
@@ -60,116 +58,6 @@ function MultiSelectDropdown(props: {
   );
 }
 
-function ToolRenderBindings() {
-  useRenderToolCall({
-    name: "ask_document",
-    description: "Render question answering results for document queries",
-    parameters: [
-      {
-        name: "question",
-        type: "string",
-        description: "Question asked by the user",
-        required: true,
-      },
-      {
-        name: "document_ids",
-        type: "string[]",
-        description: "Optional list of document ids for multi-document retrieval",
-        required: false,
-      },
-    ],
-    render: ({ status, args, result }) => {
-      if (status !== "complete") {
-        return (
-          <div className="rounded-md border border-dashed border-[var(--brand-ink)]/35 bg-white/70 p-3 text-sm text-[var(--muted-ink)]">
-            Searching selected document(s) for: <span className="font-medium text-[var(--brand-ink)]">{args.question}</span>
-          </div>
-        );
-      }
-
-      const askResult = result as Partial<AskResponse> & { error?: string };
-      if (askResult.error) {
-        return <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">{askResult.error}</div>;
-      }
-
-      return (
-        <div className="rounded-md border border-[var(--brand)]/30 bg-[var(--card)] p-3 text-sm text-[var(--brand-ink)]">
-          <div className="mb-2 text-xs uppercase tracking-[0.14em] text-[var(--muted-ink)]">Answer</div>
-          <div className="mb-2 whitespace-pre-wrap">{askResult.answer}</div>
-          <div className="text-xs text-[var(--muted-ink)]">
-            Confidence: {askResult.confidence ?? 0} • Guardrail: {askResult.guardrail ?? "unknown"}
-          </div>
-        </div>
-      );
-    },
-  });
-
-  useRenderToolCall({
-    name: "extract_shipment",
-    description: "Render structured shipment extraction output",
-    parameters: [
-      {
-        name: "document_ids",
-        type: "string[]",
-        description: "Optional list of document ids for multi-document extraction",
-        required: false,
-      },
-    ],
-    render: ({ status, result }) => {
-      if (status !== "complete") {
-        return (
-          <div className="rounded-md border border-dashed border-[var(--brand-ink)]/35 bg-white/70 p-3 text-sm text-[var(--muted-ink)]">
-            Extracting shipment fields from selected document(s)...
-          </div>
-        );
-      }
-
-      const extractResult = result as Partial<ExtractResponse> & { error?: string };
-      if (extractResult.error) {
-        return <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">{extractResult.error}</div>;
-      }
-
-      const first = extractResult.results?.[0];
-      return (
-        <div className="rounded-md border border-[var(--accent)]/35 bg-[var(--card)] p-3 text-sm text-[var(--brand-ink)]">
-          <div className="mb-2 text-xs uppercase tracking-[0.14em] text-[var(--muted-ink)]">Structured Extraction</div>
-          <div className="mb-2 text-xs text-[var(--muted-ink)]">Documents extracted: {extractResult.total ?? 0}</div>
-          {first ? (
-            <>
-              <div className="mb-2 text-xs text-[var(--muted-ink)]">
-                {first.file_name} • {first.document_id} • confidence {first.confidence}
-              </div>
-              <pre className="max-h-56 overflow-auto rounded-md bg-[var(--panel)] p-2 text-xs">{prettyJson(first.extraction)}</pre>
-            </>
-          ) : null}
-        </div>
-      );
-    },
-  });
-
-  useRenderToolCall({
-    name: "get_latest_document",
-    description: "Render the latest uploaded document metadata",
-    render: ({ status, result }) => {
-      if (status !== "complete") {
-        return (
-          <div className="rounded-md border border-dashed border-[var(--brand-ink)]/35 bg-white/70 p-3 text-sm text-[var(--muted-ink)]">
-            Looking up latest document...
-          </div>
-        );
-      }
-
-      return (
-        <pre className="max-h-56 overflow-auto rounded-md border border-[var(--brand-ink)]/20 bg-[var(--panel)] p-3 text-xs text-[var(--brand-ink)]">
-          {prettyJson(result)}
-        </pre>
-      );
-    },
-  });
-
-  return null;
-}
-
 export function DocIntelligenceApp() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedAskDocumentIds, setSelectedAskDocumentIds] = useState<string[]>([]);
@@ -197,50 +85,6 @@ export function DocIntelligenceApp() {
   const extractionCount = extractResult?.results.length ?? 0;
   const extractionPageIndex = extractionCount === 0 ? 0 : Math.min(extractPage, extractionCount - 1);
   const extractionItem = extractionCount > 0 ? extractResult?.results[extractionPageIndex] : null;
-
-  const readableState = useMemo(
-    () => ({
-      latest_document_id: latestDocumentId,
-      selected_ask_document_ids: selectedAskDocumentIds,
-      selected_extract_document_ids: selectedExtractDocumentIds,
-      indexed_document_count: indexedDocuments.length,
-      latest_upload: uploadResult,
-      latest_qa: askResult
-        ? {
-            document_id: askResult.document_id,
-            document_ids: askResult.document_ids,
-            confidence: askResult.confidence,
-            guardrail: askResult.guardrail,
-            answer_preview: askResult.answer.slice(0, 220),
-          }
-        : null,
-      latest_extraction: extractResult
-        ? {
-            total: extractResult.total,
-            current_page: extractionPageIndex + 1,
-          }
-        : null,
-    }),
-    [
-      latestDocumentId,
-      selectedAskDocumentIds,
-      selectedExtractDocumentIds,
-      indexedDocuments.length,
-      uploadResult,
-      askResult,
-      extractResult,
-      extractionPageIndex,
-    ],
-  );
-
-  useCopilotReadable(
-    {
-      description:
-        "Current app state: indexed documents, selected ask/extraction documents, and latest ask/extract outcomes.",
-      value: readableState,
-    },
-    [readableState],
-  );
 
   function toggleSelectedDocument(
     documentId: string,
@@ -396,8 +240,6 @@ export function DocIntelligenceApp() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-16 text-[var(--brand-ink)]">
-      <ToolRenderBindings />
-
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-8 sm:px-6 lg:px-8">
         <header className="rounded-2xl border border-[var(--brand-ink)]/15 bg-[var(--card)]/80 p-6 shadow-[0_12px_30px_rgba(10,38,49,0.08)] backdrop-blur-sm">
           <div className="text-xs uppercase tracking-[0.22em] text-[var(--muted-ink)]">Ultra Doc-Intelligence</div>
@@ -448,7 +290,7 @@ export function DocIntelligenceApp() {
                 <button
                   type="button"
                   onClick={() => void loadIndexedDocuments()}
-                  className="rounded-md border border-[var(--brand-ink)]/25 px-2 py-1 text-xs text-[var(--brand-ink)] hover:bg-[var(--panel)]"
+                  className="rounded-md border border-[var(--brand-ink)]/25 bg-white px-3 py-1.5 text-xs font-medium text-[var(--brand-ink)] transition hover:bg-[var(--panel)]"
                 >
                   {loadingDocuments ? "Refreshing..." : "Refresh docs"}
                 </button>
@@ -458,7 +300,10 @@ export function DocIntelligenceApp() {
                 Select one or multiple indexed documents. If none selected, latest upload is used.
               </p>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 rounded-xl border border-[var(--brand-ink)]/12 bg-white/70 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-ink)]">
+                  Documents in scope
+                </div>
                 <MultiSelectDropdown
                   title="question answering"
                   selectedIds={selectedAskDocumentIds}
@@ -466,32 +311,50 @@ export function DocIntelligenceApp() {
                   onToggle={(id) => toggleSelectedDocument(id, setSelectedAskDocumentIds)}
                 />
 
-                <div className="flex flex-wrap gap-2">
-                  {selectedAskDocumentIds.map((id) => {
-                    const doc = indexedById.get(id);
-                    return (
-                      <span
-                        key={id}
-                        className="inline-flex max-w-full items-center gap-2 rounded-full bg-[var(--panel)] px-3 py-1 text-xs text-[var(--brand-ink)]"
-                      >
-                        <span className="truncate">{doc?.file_name ?? "Unknown"}</span>
-                        <span className="truncate text-[var(--muted-ink)]">{id}</span>
-                      </span>
-                    );
-                  })}
+                <div className="mt-3 flex min-h-8 flex-wrap gap-2">
+                  {selectedAskDocumentIds.length > 0 ? (
+                    selectedAskDocumentIds.map((id) => {
+                      const doc = indexedById.get(id);
+                      return (
+                        <span
+                          key={id}
+                          className="inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--brand-ink)]/15 bg-[var(--panel)] px-3 py-1 text-xs text-[var(--brand-ink)]"
+                        >
+                          <span className="truncate">{doc?.file_name ?? "Unknown"}</span>
+                          <span className="truncate text-[var(--muted-ink)]">{id}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-[var(--muted-ink)]">No explicit selection. Latest upload will be used.</span>
+                  )}
                 </div>
+              </div>
 
+              <div className="mt-4">
+                <label htmlFor="ask-question" className="text-sm font-medium text-[var(--brand-ink)]">
+                  Your question
+                </label>
                 <textarea
+                  id="ask-question"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="Where is pickup and drop for the selected docs?"
-                  rows={4}
-                  className="rounded-lg border border-[var(--brand-ink)]/25 bg-white px-3 py-2 text-sm"
+                  placeholder="Example: Where is pickup and drop for the selected docs?"
+                  rows={5}
+                  className="mt-2 w-full resize-y rounded-xl border border-[var(--brand-ink)]/20 bg-white px-4 py-3 text-sm shadow-sm transition placeholder:text-[var(--muted-ink)]/75 focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
                 />
+              </div>
+
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs text-[var(--muted-ink)]">
+                  {selectedAskDocumentIds.length > 0
+                    ? `Asking across ${selectedAskDocumentIds.length} selected document(s).`
+                    : "Asking against the latest uploaded document."}
+                </div>
                 <button
                   type="submit"
                   disabled={asking}
-                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="w-full rounded-xl bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
                 >
                   {asking ? "Retrieving answer..." : "Ask"}
                 </button>
@@ -651,17 +514,6 @@ export function DocIntelligenceApp() {
           </section>
         </div>
       </div>
-
-      <CopilotSidebar
-        defaultOpen={false}
-        labels={{
-          title: "Logistics Copilot",
-          initial: "Ask me about the uploaded document.",
-        }}
-        instructions={
-          "You are a logistics document intelligence copilot. Use ask_document for grounded Q&A and extract_shipment for schema extraction. You may pass document_ids for multi-document querying and extraction. Never invent values not present in tool output."
-        }
-      />
     </div>
   );
 }
